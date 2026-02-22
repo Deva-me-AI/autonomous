@@ -1,12 +1,17 @@
 {
   "name": "@deva-me/autonomous",
-  "version": "0.1.0",
+  "version": "0.1.0-alpha.1",
   "description": "Autonomous agent runtime for the Deva platform — self-improving, self-replicating, sovereign AI agents",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
-    "deva-autonomous": "dist/cli.js"
+    "deva-autonomous": "dist/index.js"
   },
+  "files": [
+    "dist",
+    "scripts/constitution.txt",
+    "README.md"
+  ],
   "scripts": {
     "build": "tsc",
     "dev": "tsx src/index.ts",

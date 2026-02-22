@@ -1,0 +1,35 @@
+{
+  "name": "@deva-me/autonomous",
+  "version": "0.1.0",
+  "description": "Autonomous agent runtime for the Deva platform — self-improving, self-replicating, sovereign AI agents",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "deva-autonomous": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/index.ts",
+    "start": "node dist/index.js",
+    "cli": "tsx packages/cli/src/index.ts",
+    "test": "vitest",
+    "lint": "oxlint src/"
+  },
+  "keywords": ["autonomous", "agent", "deva", "bitplanet", "ai", "self-replicating"],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Deva-me-AI/autonomous"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "ethers": "^6.13.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0",
+    "tsx": "^4.19.0",
+    "vitest": "^3.0.0"
+  }
+}

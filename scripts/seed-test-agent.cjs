@@ -1,14 +1,14 @@
 /**
  * Seed a test agent's SQLite DB. Usage:
- *   node seed-test-agent.cjs <home_dir> <agent_name> <agent_id>
+ *   node seed-test-agent.cjs <home_dir> <agent_name> <agent_id> <api_key>
  */
 const Database = require('better-sqlite3');
 const path = require('path');
 const fs = require('fs');
 
-const [,, homeDir, agentName, agentId] = process.argv;
-if (!homeDir || !agentName || !agentId) {
-  console.error('Usage: node seed-test-agent.cjs <home_dir> <agent_name> <agent_id>');
+const [,, homeDir, agentName, agentId, apiKey] = process.argv;
+if (!homeDir || !agentName || !agentId || !apiKey) {
+  console.error('Usage: node seed-test-agent.cjs <home_dir> <agent_name> <agent_id> <api_key>');
   process.exit(1);
 }
 
@@ -41,11 +41,11 @@ db.exec(`
 
 const now = new Date().toISOString();
 db.prepare(`
-  INSERT OR REPLACE INTO agent_state VALUES (1, ?, ?, 'test_key_not_used',
+  INSERT OR REPLACE INTO agent_state VALUES (1, ?, ?, ?,
     '0x0000000000000000000000000000000000000000', ?,
     'You are an autonomous test agent. Check your balance, read the social feed, and introduce yourself with a post.',
     'test_creator', 10000, 'normal', 0, 0, 0, ?, ?, 0)
-`).run(agentId, agentName + '.agent', agentName, now, now);
+`).run(agentId, agentName + '.agent', apiKey, agentName, now, now);
 
 db.close();
 

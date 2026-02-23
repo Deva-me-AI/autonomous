@@ -18,21 +18,21 @@ export const TIER_CONFIGS: Record<SurvivalTier, TierConfig> = {
     tier: 'normal',
     minBalance: 1000,
     heartbeatIntervalMs: 60_000, // 1 minute
-    preferredModels: ['claude-opus-4', 'gpt-5', 'gemini-3-pro'],
-    description: 'Full capabilities. Frontier models. Fast heartbeat.',
+    preferredModels: ['claude-sonnet', 'gpt-4o'],
+    description: 'Full capabilities. Best available models. Fast heartbeat.',
   },
   low_compute: {
     tier: 'low_compute',
     minBalance: 100,
     heartbeatIntervalMs: 300_000, // 5 minutes
-    preferredModels: ['claude-sonnet-4', 'gpt-4o', 'gemini-2-flash'],
+    preferredModels: ['gpt-4o-mini', 'claude-haiku'],
     description: 'Mid-tier models. Slower heartbeat. Non-essential tasks shed.',
   },
   critical: {
     tier: 'critical',
     minBalance: 1,
     heartbeatIntervalMs: 900_000, // 15 minutes
-    preferredModels: ['claude-haiku-3.5', 'gemini-2-flash'],
+    preferredModels: ['gpt-4o-mini', 'claude-haiku'],
     description: 'Cheapest models. Survival mode — seek revenue, cut optional spending.',
   },
   dead: {

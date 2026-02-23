@@ -79,31 +79,32 @@ export async function registerAgent(
   };
 }
 
-/** Check current karma balance */
+/** Check current karma balance via /agents/status */
 export async function getKarmaBalance(config: DevaConfig): Promise<number> {
-  const res = await fetch(`${config.apiBase}/agents/${config.agentId}/karma`, {
-    headers: { 'X-API-Key': config.apiKey! },
+  const res = await fetch(`${config.apiBase}/agents/status`, {
+    headers: { 'Authorization': `Bearer ${config.apiKey}` },
   });
 
   if (!res.ok) return 0;
   const data = await res.json();
-  return data.balance || 0;
+  return data.agent?.karma || 0;
 }
 
-/** Get agent profile info */
+/** Get agent profile info via /agents/status */
 export async function getAgentProfile(config: DevaConfig): Promise<DevaIdentity | null> {
-  const res = await fetch(`${config.apiBase}/agents/${config.agentId}`, {
-    headers: { 'X-API-Key': config.apiKey! },
+  const res = await fetch(`${config.apiBase}/agents/status`, {
+    headers: { 'Authorization': `Bearer ${config.apiKey}` },
   });
 
   if (!res.ok) return null;
   const data = await res.json();
+  const agent = data.agent;
   return {
-    agentId: data.agent_id,
-    username: data.username,
+    agentId: agent.id,
+    username: agent.name,
     apiKey: config.apiKey!,
-    trustTier: data.trust_tier || 'UNVERIFIED',
-    karmaBalance: data.karma_balance || 0,
+    trustTier: agent.is_claimed ? 'X_VERIFIED' : 'UNVERIFIED',
+    karmaBalance: agent.karma || 0,
   };
 }
 
@@ -132,36 +133,115 @@ export async function chatCompletion(
     };
   }
 
-  // Fall back to Deva endpoint
+  // Fall back to Deva endpoint (streaming-only)
+  const body: Record<string, unknown> = {
+    model,
+    messages,
+    stream: true,
+    temperature: options.temperature ?? 0.7,
+    max_tokens: options.maxTokens ?? 4096,
+  };
+
+  if (options.tools && options.tools.length > 0) {
+    body.tools = options.tools;
+  }
+
   const res = await fetch(`${config.apiBase}/v1/chat/completions`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'X-API-Key': config.apiKey!,
+      'Authorization': `Bearer ${config.apiKey}`,
     },
-    body: JSON.stringify({
-      model,
-      messages,
-      temperature: options.temperature ?? 0.7,
-      max_tokens: options.maxTokens ?? 4096,
-      tools: options.tools,
-    }),
+    body: JSON.stringify(body),
   });
 
   if (!res.ok) {
-    const body = await res.text();
-    throw new Error(`LLM request failed: ${res.status} ${body}`);
+    const errBody = await res.text();
+    throw new Error(`LLM request failed: ${res.status} ${errBody}`);
   }
 
-  const data = await res.json();
-  const choice = data.choices?.[0]?.message;
-  const content = normalizeContent(choice?.content);
-  return {
-    content,
-    tokensUsed: data.usage?.total_tokens || 0,
-    karmaCost: data.karma_cost || 0,
-    toolCalls: Array.isArray(choice?.tool_calls) ? choice.tool_calls : [],
-  };
+  // Parse SSE stream
+  return parseSSEStream(res);
+}
+
+/** Parse an SSE stream from OpenAI-compatible chat completions */
+async function parseSSEStream(
+  res: Response,
+): Promise<{ content: string; tokensUsed: number; karmaCost: number; toolCalls: ChatToolCall[] }> {
+  let content = '';
+  let tokensUsed = 0;
+  let karmaCost = 0;
+  const toolCallMap = new Map<number, { id: string; name: string; args: string }>();
+
+  const reader = res.body?.getReader();
+  if (!reader) throw new Error('No response body');
+
+  const decoder = new TextDecoder();
+  let buffer = '';
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+
+    const lines = buffer.split('\n');
+    buffer = lines.pop() || '';
+
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed || !trimmed.startsWith('data: ')) continue;
+      const payload = trimmed.slice(6);
+      if (payload === '[DONE]') continue;
+
+      try {
+        const chunk = JSON.parse(payload);
+        const delta = chunk.choices?.[0]?.delta;
+        if (!delta) continue;
+
+        if (delta.content) {
+          content += delta.content;
+        }
+
+        // Accumulate tool calls from deltas
+        if (Array.isArray(delta.tool_calls)) {
+          for (const tc of delta.tool_calls) {
+            const idx = tc.index ?? 0;
+            const existing = toolCallMap.get(idx);
+            if (tc.id || !existing) {
+              toolCallMap.set(idx, {
+                id: tc.id || existing?.id || '',
+                name: tc.function?.name || existing?.name || '',
+                args: (existing?.args || '') + (tc.function?.arguments || ''),
+              });
+            } else {
+              existing.args += tc.function?.arguments || '';
+              if (tc.function?.name) existing.name = tc.function.name;
+            }
+          }
+        }
+
+        // Capture usage from final chunk (some providers include it)
+        if (chunk.usage) {
+          tokensUsed = chunk.usage.total_tokens || 0;
+        }
+        if (chunk.karma_cost) {
+          karmaCost = chunk.karma_cost;
+        }
+      } catch {
+        // skip malformed JSON
+      }
+    }
+  }
+
+  const toolCalls: ChatToolCall[] = [...toolCallMap.entries()]
+    .sort(([a], [b]) => a - b)
+    .map(([, tc]) => ({
+      id: tc.id,
+      type: 'function' as const,
+      function: { name: tc.name, arguments: tc.args },
+    }));
+
+  return { content, tokensUsed, karmaCost, toolCalls };
 }
 
 function normalizeContent(content: unknown): string {

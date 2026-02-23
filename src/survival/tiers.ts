@@ -17,21 +17,21 @@ export const TIER_CONFIGS: Record<SurvivalTier, TierConfig> = {
   normal: {
     tier: 'normal',
     minBalance: 1000,
-    heartbeatIntervalMs: 60_000, // 1 minute
+    heartbeatIntervalMs: 5_000, // 5 seconds
     preferredModels: ['claude-sonnet', 'gpt-4o'],
     description: 'Full capabilities. Best available models. Fast heartbeat.',
   },
   low_compute: {
     tier: 'low_compute',
     minBalance: 100,
-    heartbeatIntervalMs: 300_000, // 5 minutes
+    heartbeatIntervalMs: 30_000, // 30 seconds
     preferredModels: ['gpt-4o-mini', 'claude-haiku'],
     description: 'Mid-tier models. Slower heartbeat. Non-essential tasks shed.',
   },
   critical: {
     tier: 'critical',
     minBalance: 1,
-    heartbeatIntervalMs: 900_000, // 15 minutes
+    heartbeatIntervalMs: 60_000, // 1 minute
     preferredModels: ['gpt-4o-mini', 'claude-haiku'],
     description: 'Cheapest models. Survival mode — seek revenue, cut optional spending.',
   },

@@ -8,8 +8,11 @@ import { chatCompletion, getKarmaBalance } from '../identity/deva.js';
 import { getTier, getTierConfig } from '../survival/tiers.js';
 import { loadState, saveState, appendTurn } from '../state/db.js';
 import { appendJournalEntry } from '../identity/soul.js';
+import { executeToolCalls } from '../tools/executor.js';
+import { getToolsForTier } from '../tools/registry.js';
 import type { AgentState, TurnRecord } from '../state/db.js';
-import type { DevaConfig } from '../identity/deva.js';
+import type { ChatMessage, DevaConfig } from '../identity/deva.js';
+import type { SurvivalTier } from '../survival/tiers.js';
 
 export interface LoopOptions {
   maxTurns?: number; // Stop after N turns (for testing), 0 = infinite
@@ -75,7 +78,7 @@ export async function runLoop(options: LoopOptions = {}): Promise<void> {
     const model = tierConfig.preferredModels[0] || 'claude-sonnet-4';
 
     // Format history as messages
-    const messages: Array<{ role: string; content: string }> = [
+    const messages: ChatMessage[] = [
       { role: 'system', content: systemPrompt },
     ];
 
@@ -95,22 +98,22 @@ export async function runLoop(options: LoopOptions = {}): Promise<void> {
     console.log(`\n🔄 Turn ${state.totalTurns + 1} | ${model} | ${state.karmaBalance} ₭`);
 
     try {
-      const response = await chatCompletion(devaConfig, model, messages);
+      const step = await runThoughtAndAction(devaConfig, model, messages, newTier);
 
       const turn: TurnRecord = {
         turnId: state.totalTurns + 1,
         timestamp: new Date().toISOString(),
-        thought: response.content.substring(0, 500), // Truncate for storage
-        action: '(parsed from response)', // TODO: parse tool calls
-        result: '(pending tool execution)', // TODO: execute tools
-        karmaSpent: response.karmaCost,
+        thought: step.finalContent.substring(0, 500),
+        action: step.actionSummary,
+        result: step.resultSummary,
+        karmaSpent: step.karmaCost,
         survivalTier: newTier,
       };
 
       // Update state
       state.totalTurns++;
-      state.totalKarmaSpent += response.karmaCost;
-      state.karmaBalance -= response.karmaCost;
+      state.totalKarmaSpent += step.karmaCost;
+      state.karmaBalance -= step.karmaCost;
       state.lastActiveAt = new Date().toISOString();
 
       // Persist
@@ -118,8 +121,9 @@ export async function runLoop(options: LoopOptions = {}): Promise<void> {
       await saveState(state);
       options.onTurn?.(turn);
 
-      console.log(`  💭 ${response.content.substring(0, 100)}...`);
-      console.log(`  💸 Cost: ${response.karmaCost} ₭ | Remaining: ${state.karmaBalance} ₭`);
+      console.log(`  💭 ${step.finalContent.substring(0, 100)}...`);
+      console.log(`  🧰 Tools: ${step.toolExecutions}`);
+      console.log(`  💸 Cost: ${step.karmaCost} ₭ | Remaining: ${state.karmaBalance} ₭`);
 
       turnCount++;
     } catch (err) {
@@ -132,6 +136,100 @@ export async function runLoop(options: LoopOptions = {}): Promise<void> {
     // Sleep between turns (based on survival tier)
     await sleep(tierConfig.heartbeatIntervalMs);
   }
+}
+
+async function runThoughtAndAction(
+  devaConfig: DevaConfig,
+  model: string,
+  messages: ChatMessage[],
+  survivalTier: SurvivalTier,
+): Promise<{
+  finalContent: string;
+  actionSummary: string;
+  resultSummary: string;
+  karmaCost: number;
+  toolExecutions: number;
+}> {
+  const MAX_TOOL_ROUNDS = 6;
+  const tools = getToolsForTier(survivalTier);
+  let karmaCost = 0;
+  let finalContent = '';
+  let actionSummary = 'no tool calls';
+  let resultSummary = 'no tool calls';
+  let toolExecutions = 0;
+
+  for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
+    const response = await chatCompletion(devaConfig, model, messages, { tools });
+    karmaCost += response.karmaCost;
+    finalContent = response.content || finalContent;
+
+    const toolCalls = response.toolCalls ?? [];
+    if (toolCalls.length === 0) {
+      return {
+        finalContent: finalContent || '(no content)',
+        actionSummary,
+        resultSummary,
+        karmaCost,
+        toolExecutions,
+      };
+    }
+
+    actionSummary = toolCalls.map((t) => t.function.name).join(', ');
+    messages.push({
+      role: 'assistant',
+      content: response.content || 'Executing requested tools.',
+      tool_calls: toolCalls,
+    });
+
+    const toolResults = await executeToolCalls(devaConfig, toolCalls, { survivalTier });
+    toolExecutions += toolResults.length;
+    resultSummary = summarizeToolResults(toolResults);
+
+    for (const result of toolResults) {
+      messages.push({
+        role: 'tool',
+        tool_call_id: result.toolCallId,
+        content: JSON.stringify({
+          success: result.success,
+          duration_ms: result.durationMs,
+          output: result.output,
+        }),
+      });
+    }
+  }
+
+  return {
+    finalContent: finalContent || '(max tool rounds reached)',
+    actionSummary,
+    resultSummary: `${resultSummary}; max tool rounds reached`,
+    karmaCost,
+    toolExecutions,
+  };
+}
+
+function summarizeToolResults(
+  results: Array<{
+    toolName: string;
+    success: boolean;
+    output: unknown;
+  }>,
+): string {
+  return results
+    .map((r) => {
+      if (r.success) {
+        return `${r.toolName}: ok`;
+      }
+      const err =
+        r.output &&
+        typeof r.output === 'object' &&
+        'error' in r.output &&
+        typeof (r.output as { error?: unknown }).error === 'string'
+          ? (r.output as { error: string }).error
+          : 'failed';
+      return `${r.toolName}: ${err}`;
+    })
+    .join(' | ')
+    .slice(0, 500);
 }
 
 function sleep(ms: number): Promise<void> {

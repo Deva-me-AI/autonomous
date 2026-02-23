@@ -16,6 +16,36 @@ export interface DevaConfig {
   agentId?: string;
 }
 
+export interface ChatToolCall {
+  id: string;
+  type: 'function';
+  function: {
+    name: string;
+    arguments: string;
+  };
+}
+
+export interface ChatMessage {
+  role: 'system' | 'user' | 'assistant' | 'tool';
+  content?: string;
+  tool_call_id?: string;
+  tool_calls?: ChatToolCall[];
+ }
+
+export interface ChatToolDefinition {
+  type: 'function';
+  function: {
+    name: string;
+    description: string;
+    parameters: {
+      type: 'object';
+      properties: Record<string, unknown>;
+      required?: string[];
+      additionalProperties?: boolean;
+    };
+  };
+}
+
 const DEFAULT_API_BASE = 'https://api.deva.me';
 
 /** Register a new agent on the Deva platform */
@@ -81,9 +111,13 @@ export async function getAgentProfile(config: DevaConfig): Promise<DevaIdentity 
 export async function chatCompletion(
   config: DevaConfig,
   model: string,
-  messages: Array<{ role: string; content: string }>,
-  options: { temperature?: number; maxTokens?: number } = {},
-): Promise<{ content: string; tokensUsed: number; karmaCost: number }> {
+  messages: ChatMessage[],
+  options: {
+    temperature?: number;
+    maxTokens?: number;
+    tools?: ChatToolDefinition[];
+  } = {},
+): Promise<{ content: string; tokensUsed: number; karmaCost: number; toolCalls: ChatToolCall[] }> {
   const res = await fetch(`${config.apiBase}/v1/chat/completions`, {
     method: 'POST',
     headers: {
@@ -95,6 +129,7 @@ export async function chatCompletion(
       messages,
       temperature: options.temperature ?? 0.7,
       max_tokens: options.maxTokens ?? 4096,
+      tools: options.tools,
     }),
   });
 
@@ -104,9 +139,31 @@ export async function chatCompletion(
   }
 
   const data = await res.json();
+  const choice = data.choices?.[0]?.message;
+  const content = normalizeContent(choice?.content);
   return {
-    content: data.choices?.[0]?.message?.content || '',
+    content,
     tokensUsed: data.usage?.total_tokens || 0,
     karmaCost: data.karma_cost || 0,
+    toolCalls: Array.isArray(choice?.tool_calls) ? choice.tool_calls : [],
   };
+}
+
+function normalizeContent(content: unknown): string {
+  if (typeof content === 'string') {
+    return content;
+  }
+  if (Array.isArray(content)) {
+    return content
+      .map((chunk) => {
+        if (typeof chunk === 'string') return chunk;
+        if (chunk && typeof chunk === 'object' && 'text' in chunk && typeof chunk.text === 'string') {
+          return chunk.text;
+        }
+        return '';
+      })
+      .join('\n')
+      .trim();
+  }
+  return '';
 }

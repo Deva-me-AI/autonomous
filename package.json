@@ -20,7 +20,14 @@
     "test": "vitest",
     "lint": "oxlint src/"
   },
-  "keywords": ["autonomous", "agent", "deva", "bitplanet", "ai", "self-replicating"],
+  "keywords": [
+    "autonomous",
+    "agent",
+    "deva",
+    "bitplanet",
+    "ai",
+    "self-replicating"
+  ],
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -30,11 +37,13 @@
     "node": ">=22"
   },
   "dependencies": {
+    "better-sqlite3": "^12.6.2",
     "ethers": "^6.13.0"
   },
   "devDependencies": {
-    "typescript": "^5.7.0",
+    "@types/better-sqlite3": "^7.6.13",
     "tsx": "^4.19.0",
+    "typescript": "^5.7.0",
     "vitest": "^3.0.0"
   }
 }

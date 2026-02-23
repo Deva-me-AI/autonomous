@@ -1,6 +1,6 @@
 {
   "name": "@deva-me/autonomous",
-  "version": "0.1.0-alpha.1",
+  "version": "0.1.0-alpha.2",
   "description": "Autonomous agent runtime for the Deva platform — self-improving, self-replicating, sovereign AI agents",
   "type": "module",
   "main": "dist/index.js",

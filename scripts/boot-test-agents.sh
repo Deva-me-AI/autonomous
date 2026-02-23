@@ -23,6 +23,9 @@ node "$REPO_DIR/scripts/seed-test-agent.cjs" "/tmp/agent-gemini" "AutonomousTest
 echo ""
 echo "🧬 Booting 3 test agents (2 turns each) via Deva API..."
 
+# Unset BYOK env vars so agents route through Deva API (not direct OpenAI/OpenRouter)
+unset DEVA_LLM_PROVIDER OPENAI_API_KEY OPENAI_BASE_URL OPENROUTER_API_KEY ANTHROPIC_API_KEY GOOGLE_API_KEY DEVA_LLM_MODEL
+
 echo ""
 echo "═══════════════════════════════════════"
 echo "🟣 Agent 1: Claude Sonnet (AutonomousTestSonnet.agent)"

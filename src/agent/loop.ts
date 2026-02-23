@@ -52,9 +52,13 @@ export async function runLoop(options: LoopOptions = {}): Promise<void> {
       break;
     }
 
-    // Refresh karma balance from Deva
+    // Refresh karma balance from Deva (skip in BYOK mode — use local balance)
     const oldTier = getTier(state.karmaBalance);
-    state.karmaBalance = await getKarmaBalance(devaConfig);
+    const { resolveInferenceConfig } = await import('../identity/inference.js');
+    const isByok = resolveInferenceConfig() !== null;
+    if (!isByok) {
+      state.karmaBalance = await getKarmaBalance(devaConfig);
+    }
     const newTier = getTier(state.karmaBalance);
 
     // Detect tier change

@@ -107,7 +107,7 @@ export async function getAgentProfile(config: DevaConfig): Promise<DevaIdentity 
   };
 }
 
-/** Call LLM completions via Deva endpoint (pays karma) */
+/** Call LLM completions — tries BYOK first, falls back to Deva endpoint */
 export async function chatCompletion(
   config: DevaConfig,
   model: string,
@@ -118,6 +118,21 @@ export async function chatCompletion(
     tools?: ChatToolDefinition[];
   } = {},
 ): Promise<{ content: string; tokensUsed: number; karmaCost: number; toolCalls: ChatToolCall[] }> {
+  // Try BYOK provider first (if configured via env vars)
+  const { resolveInferenceConfig, byokCompletion } = await import('./inference.js');
+  const byokConfig = resolveInferenceConfig();
+  if (byokConfig) {
+    const byokModel = byokConfig.model || model;
+    const result = await byokCompletion(byokConfig, byokModel, messages, options);
+    return {
+      content: result.content,
+      tokensUsed: result.tokensUsed,
+      karmaCost: result.karmaCost,
+      toolCalls: result.toolCalls,
+    };
+  }
+
+  // Fall back to Deva endpoint
   const res = await fetch(`${config.apiBase}/v1/chat/completions`, {
     method: 'POST',
     headers: {

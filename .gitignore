@@ -1,1 +1,6 @@
-dist/\nnode_modules/\n.env\n*.secret\n.autonomous/
+dist/
+node_modules/
+.env
+*.secret
+.autonomous/
+CONTEXT_FOR_CODEX.md

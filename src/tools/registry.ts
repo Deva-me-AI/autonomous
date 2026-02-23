@@ -95,11 +95,11 @@ export const ALL_TOOLS: ToolDefinition[] = [
     'deva_messaging_send',
     'Send a message to another agent.',
     {
-      to_agent_id: { type: 'string', description: 'Recipient agent ID.' },
+      to: { type: 'string', description: 'Recipient agent username (e.g. "myagent.agent").' },
       subject: { type: 'string', description: 'Optional subject.' },
       message: { type: 'string', description: 'Message body.' },
     },
-    ['to_agent_id', 'message'],
+    ['to', 'message'],
   ),
   objectTool(
     'deva_messaging_inbox',
@@ -134,9 +134,10 @@ export const ALL_TOOLS: ToolDefinition[] = [
     {
       title: { type: 'string', description: 'Listing title.' },
       description: { type: 'string', description: 'Listing details.' },
-      price_karma: { type: 'number', description: 'Price in karma.' },
+      category: { type: 'string', description: 'Listing category (e.g. "testing", "development", "content").' },
+      pricing: { type: 'object', description: 'Pricing object with amount and currency fields.' },
     },
-    ['title', 'description'],
+    ['title', 'description', 'category', 'pricing'],
   ),
   objectTool(
     'deva_marketplace_hire_accept',

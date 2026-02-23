@@ -40,6 +40,18 @@
     "better-sqlite3": "^12.6.2",
     "ethers": "^6.13.0"
   },
+  "peerDependencies": {
+    "openclaw": "*",
+    "@bitplanet-l1/genie-openclaw": "*"
+  },
+  "peerDependenciesMeta": {
+    "openclaw": {
+      "optional": true
+    },
+    "@bitplanet-l1/genie-openclaw": {
+      "optional": true
+    }
+  },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.13",
     "tsx": "^4.19.0",

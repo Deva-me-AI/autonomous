@@ -13,12 +13,21 @@ import { getToolsForTier } from '../tools/registry.js';
 import type { AgentState, TurnRecord } from '../state/db.js';
 import type { ChatMessage, DevaConfig } from '../identity/deva.js';
 import type { SurvivalTier } from '../survival/tiers.js';
+import type { LlmToolCall, ToolExecutionOptions, ToolExecutionResult } from '../tools/executor.js';
+
+export type ToolExecutor = (
+  config: DevaConfig,
+  toolCalls: LlmToolCall[],
+  options: ToolExecutionOptions,
+) => Promise<ToolExecutionResult[]>;
 
 export interface LoopOptions {
   maxTurns?: number; // Stop after N turns (for testing), 0 = infinite
   onTurn?: (turn: TurnRecord) => void;
   onDeath?: (state: AgentState) => void;
   onTierChange?: (oldTier: string, newTier: string) => void;
+  abortSignal?: AbortSignal;
+  toolExecutor?: ToolExecutor;
 }
 
 /** Run the agent loop */
@@ -44,8 +53,14 @@ export async function runLoop(options: LoopOptions = {}): Promise<void> {
 
   let turnCount = 0;
   const maxTurns = options.maxTurns ?? 0;
+  const toolExecutor = options.toolExecutor ?? executeToolCalls;
 
   while (true) {
+    if (options.abortSignal?.aborted) {
+      console.log('🛑 Agent loop stopped by signal.');
+      break;
+    }
+
     // Check if max turns reached (for testing)
     if (maxTurns > 0 && turnCount >= maxTurns) {
       console.log(`🛑 Max turns (${maxTurns}) reached. Stopping.`);
@@ -102,7 +117,7 @@ export async function runLoop(options: LoopOptions = {}): Promise<void> {
     console.log(`\n🔄 Turn ${state.totalTurns + 1} | ${model} | ${state.karmaBalance} ₭`);
 
     try {
-      const step = await runThoughtAndAction(devaConfig, model, messages, newTier);
+      const step = await runThoughtAndAction(devaConfig, model, messages, newTier, toolExecutor);
 
       const turn: TurnRecord = {
         turnId: state.totalTurns + 1,
@@ -133,12 +148,12 @@ export async function runLoop(options: LoopOptions = {}): Promise<void> {
     } catch (err) {
       console.error(`  ❌ Turn failed: ${(err as Error).message}`);
       // On error, wait longer before retrying
-      await sleep(tierConfig.heartbeatIntervalMs * 2);
+      await sleepOrAbort(tierConfig.heartbeatIntervalMs * 2, options.abortSignal);
       continue;
     }
 
     // Sleep between turns (based on survival tier)
-    await sleep(tierConfig.heartbeatIntervalMs);
+    await sleepOrAbort(tierConfig.heartbeatIntervalMs, options.abortSignal);
   }
 }
 
@@ -147,6 +162,7 @@ async function runThoughtAndAction(
   model: string,
   messages: ChatMessage[],
   survivalTier: SurvivalTier,
+  toolExecutor: ToolExecutor,
 ): Promise<{
   finalContent: string;
   actionSummary: string;
@@ -185,7 +201,7 @@ async function runThoughtAndAction(
       tool_calls: toolCalls,
     });
 
-    const toolResults = await executeToolCalls(devaConfig, toolCalls, { survivalTier });
+    const toolResults = await toolExecutor(devaConfig, toolCalls, { survivalTier });
     toolExecutions += toolResults.length;
     resultSummary = summarizeToolResults(toolResults);
 
@@ -238,4 +254,20 @@ function summarizeToolResults(
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function sleepOrAbort(ms: number, abortSignal?: AbortSignal): Promise<void> {
+  if (!abortSignal) {
+    await sleep(ms);
+    return;
+  }
+  if (abortSignal.aborted) {
+    return;
+  }
+  await Promise.race([
+    sleep(ms),
+    new Promise<void>((resolve) => {
+      abortSignal.addEventListener('abort', () => resolve(), { once: true });
+    }),
+  ]);
 }

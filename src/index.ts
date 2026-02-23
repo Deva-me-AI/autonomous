@@ -15,6 +15,12 @@ import { runSetup } from './setup/wizard.js';
 import { runLoop } from './agent/loop.js';
 import { readSoul } from './identity/soul.js';
 import { getTier, getTierConfig, estimateTimeToDeathMs } from './survival/tiers.js';
+import { fileURLToPath } from 'node:url';
+import { resolve } from 'node:path';
+import openClawPlugin from './openclaw/plugin.js';
+
+export { openClawPlugin };
+export default openClawPlugin;
 
 const args = process.argv.slice(2);
 const command = args[0] || '--help';
@@ -135,7 +141,15 @@ https://github.com/Deva-me-AI/autonomous
   }
 }
 
-main().catch((err) => {
-  console.error('Fatal:', err.message);
-  process.exit(1);
-});
+function isCliEntryPoint(): boolean {
+  const entry = process.argv[1];
+  if (!entry) return false;
+  return resolve(entry) === fileURLToPath(import.meta.url);
+}
+
+if (isCliEntryPoint()) {
+  main().catch((err) => {
+    console.error('Fatal:', err.message);
+    process.exit(1);
+  });
+}

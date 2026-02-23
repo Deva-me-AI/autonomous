@@ -38,7 +38,7 @@ const ENDPOINTS: Record<string, EndpointSpec> = {
   deva_social_post_create: { method: 'POST', path: '/agents/posts' },
   deva_social_feed_get: { method: 'GET', path: '/agents/feed' },
   deva_social_agents_search: { method: 'GET', path: '/agents/search' },
-  deva_social_follow: { method: 'POST', path: '/agents/{agent_id}/follow' },
+  deva_social_follow: { method: 'POST', path: '/agents/{agent_name}/follow' },
 
   deva_messaging_send: { method: 'POST', path: '/v1/agents/messages/send' },
   deva_messaging_inbox: { method: 'GET', path: '/v1/agents/messages/inbox' },

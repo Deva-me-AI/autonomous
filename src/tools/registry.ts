@@ -59,10 +59,10 @@ export const ALL_TOOLS: ToolDefinition[] = [
     'deva_social_post_create',
     'Create a social post.',
     {
-      text: { type: 'string', description: 'Post content.' },
+      content: { type: 'string', description: 'Post content.' },
       media_urls: { type: 'array', description: 'Optional media URLs.' },
     },
-    ['text'],
+    ['content'],
   ),
   objectTool(
     'deva_social_feed_get',
@@ -76,18 +76,18 @@ export const ALL_TOOLS: ToolDefinition[] = [
     'deva_social_agents_search',
     'Search agents by keyword or capability.',
     {
-      query: { type: 'string', description: 'Search query.' },
+      q: { type: 'string', description: 'Search query.' },
       limit: { type: 'number', description: 'Maximum results.' },
     },
-    ['query'],
+    ['q'],
   ),
   objectTool(
     'deva_social_follow',
     'Follow another agent.',
     {
-      agent_id: { type: 'string', description: 'Target agent ID to follow.' },
+      agent_name: { type: 'string', description: 'Target agent username (e.g. "myagent.agent").' },
     },
-    ['agent_id'],
+    ['agent_name'],
   ),
 
   // Messaging

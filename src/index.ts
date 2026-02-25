@@ -20,6 +20,10 @@ import { resolve } from 'node:path';
 import openClawPlugin from './openclaw/plugin.js';
 
 export { openClawPlugin };
+export * from './monitor/types.js';
+export * from './monitor/scorer.js';
+export * from './monitor/sanitizer.js';
+export * from './monitor/store.js';
 export default openClawPlugin;
 
 const args = process.argv.slice(2);

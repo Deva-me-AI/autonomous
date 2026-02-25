@@ -4,6 +4,13 @@
   "description": "Autonomous agent runtime for the Deva platform — self-improving, self-replicating, sovereign AI agents",
   "type": "module",
   "main": "dist/index.js",
+  "exports": {
+    ".": "./dist/index.js",
+    "./monitor/types": "./dist/monitor/types.js",
+    "./monitor/scorer": "./dist/monitor/scorer.js",
+    "./monitor/sanitizer": "./dist/monitor/sanitizer.js",
+    "./monitor/store": "./dist/monitor/store.js"
+  },
   "bin": {
     "deva-autonomous": "dist/index.js"
   },

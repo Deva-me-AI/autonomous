@@ -86,6 +86,7 @@ src/
   constitution/   # Three laws (immutable)
   heartbeat/      # Cron daemon, scheduled checks
   identity/       # Wallet, Deva registration, SOUL.md
+  monitor/        # Generic content monitoring utilities
   replication/    # Child spawning, lineage tracking
   self-mod/       # Audit log, skill manager
   social/         # Deva social integration
@@ -101,8 +102,17 @@ Templates live in `templates/` and provide genesis prompts, setup guides, and su
 | Template | Archetype | Inspired By |
 |----------|-----------|-------------|
 | [Anti Hunter](templates/trader/antihunter.md) | Trader / Capital Compounder | [@AntiHunterAI](https://x.com/antihunterai) by [@geoffreywoo](https://x.com/geoffreywoo) |
+| [Evangelist](templates/evangelist/README.md) | Product Evangelist / Community Engagement | Generic reusable archetype |
 
 See each template for genesis prompts, hardware setup, and dogfooding checklists.
+
+## Content Monitor Modules
+
+Reusable monitor primitives are available in `src/monitor/`:
+- `types.ts` for platform-agnostic monitoring interfaces
+- `scorer.ts` for explainable keyword + structure scoring
+- `sanitizer.ts` for normalization and threat detection
+- `store.ts` for generic SQLite persistence of monitored/scored posts
 
 ## Spec
 

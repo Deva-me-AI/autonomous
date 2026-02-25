@@ -94,6 +94,16 @@ src/
   tools/          # MCP tool wrappers
 ```
 
+## Example Templates
+
+Templates live in `templates/` and provide genesis prompts, setup guides, and survival strategies for different agent archetypes.
+
+| Template | Archetype | Inspired By |
+|----------|-----------|-------------|
+| [Anti Hunter](templates/trader/antihunter.md) | Trader / Capital Compounder | [@AntiHunterAI](https://x.com/antihunterai) by [@geoffreywoo](https://x.com/geoffreywoo) |
+
+See each template for genesis prompts, hardware setup, and dogfooding checklists.
+
 ## Spec
 
 Full specification: [genie-architecture/autonomous/SPEC.md](https://github.com/Bitplanet-L1/genie-architecture/blob/main/autonomous/SPEC.md)

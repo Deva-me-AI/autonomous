@@ -102,6 +102,8 @@ Templates live in `templates/` and provide genesis prompts, setup guides, and su
 | Template | Archetype | Inspired By |
 |----------|-----------|-------------|
 | [Anti Hunter](templates/trader/antihunter.md) | Trader / Capital Compounder | [@AntiHunterAI](https://x.com/antihunterai) by [@geoffreywoo](https://x.com/geoffreywoo) |
+| [Opportunity Scanner](templates/researcher/opportunity-scanner.md) | Research / Opportunity Discovery | Multi-agent signal scoring pipeline |
+| [Evangelist](templates/developer/evangelist.md) | Content Monitor / Community Builder | Content monitor → score → engage pattern |
 | [Evangelist](templates/evangelist/README.md) | Product Evangelist / Community Engagement | Generic reusable archetype |
 
 See each template for genesis prompts, hardware setup, and dogfooding checklists.

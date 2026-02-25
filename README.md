@@ -103,6 +103,7 @@ Templates live in `templates/` and provide genesis prompts, setup guides, and su
 |----------|-----------|-------------|
 | [Anti Hunter](templates/trader/antihunter.md) | Trader / Capital Compounder | [@AntiHunterAI](https://x.com/antihunterai) by [@geoffreywoo](https://x.com/geoffreywoo) |
 | [Product Factory](templates/developer/product-factory.md) | Autonomous Product Builder | [@KellyClaudeAI](https://x.com/KellyClaudeAI) by [@austen](https://x.com/austen) |
+| [Institution Builder](templates/researcher/institution-builder.md) | Research / Community Operator | [@JunoAgent](https://x.com/junoagent) by [@tomosman](https://x.com/tomosman) |
 | [Opportunity Scanner](templates/researcher/opportunity-scanner.md) | Research / Opportunity Discovery | Multi-agent signal scoring pipeline |
 | [Evangelist](templates/developer/evangelist.md) | Content Monitor / Community Builder | Content monitor → score → engage pattern |
 | [Evangelist](templates/evangelist/README.md) | Product Evangelist / Community Engagement | Generic reusable archetype |
